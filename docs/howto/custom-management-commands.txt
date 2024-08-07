@@ -185,16 +185,10 @@ Below is an example of how to implement this in a custom management command:
                 close_old_connections()  # Ensures database connections are properly managed.
                 time.sleep(1)
                 try:
-                    logger.info(f"health_check_enabled: {connection.health_check_enabled}")
-                    logger.info(f"health_check_done: {connection.health_check_done}")
-                    logger.info(f"errors_occurred: {connection.errors_occurred}")
-                    with connection.cursor() as cursor:
-                        cursor.execute("SELECT 1")
-                    logger.info("Query executed successfully")
+                    # Do something using the database
+                    pass
                 except Exception as e:
                     logger.exception(e)
-
-This pattern is particularly important when using database connections in long-running processes, as it ensures that connections are regularly refreshed, avoiding issues caused by connection timeouts or stale connections.
 
 Overriding commands
 ===================
