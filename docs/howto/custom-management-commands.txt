@@ -157,6 +157,45 @@ Testing
 Information on how to test custom management commands can be found in the
 :ref:`testing docs <topics-testing-management-commands>`.
 
+Handling Long-Running Management Commands
+=========================================
+
+Django management commands are not typically designed to be long-running processes. However, when building long-running or daemonized commands, especially those that are expected to run for extended periods (e.g., longer than the :setting:`CONN_MAX_AGE` setting or the Time-To-Live (TTL) of the underlying database connection), it is important to manage database connections appropriately. If not managed properly, stale database connections can lead to unexpected errors and resource exhaustion.
+
+Closing Old Connections
+-----------------------
+
+To ensure that your long-running management command behaves correctly, you should manually close old database connections at appropriate intervals. This can be achieved by calling the :func:`~django.db.close_old_connections` function from :mod:`django.db`.
+
+Below is an example of how to implement this in a custom management command:
+
+.. code-block:: python
+
+    import logging
+    import time
+
+    from django.core.management import BaseCommand
+    from django.db import close_old_connections, connection
+
+    logger = logging.getLogger(__name__)
+
+    class Command(BaseCommand):
+        def handle(self, *args, **kwargs):
+            while True:
+                close_old_connections()  # Ensures database connections are properly managed.
+                time.sleep(1)
+                try:
+                    logger.info(f"health_check_enabled: {connection.health_check_enabled}")
+                    logger.info(f"health_check_done: {connection.health_check_done}")
+                    logger.info(f"errors_occurred: {connection.errors_occurred}")
+                    with connection.cursor() as cursor:
+                        cursor.execute("SELECT 1")
+                    logger.info("Query executed successfully")
+                except Exception as e:
+                    logger.exception(e)
+
+This pattern is particularly important when using database connections in long-running processes, as it ensures that connections are regularly refreshed, avoiding issues caused by connection timeouts or stale connections.
+
 Overriding commands
 ===================
 
